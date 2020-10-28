@@ -2,6 +2,7 @@
  * A typical api function: takes an arbitrary number of arguments of type A
  * and returns a Promise which resolves with a specific response type of R.
  */
+// TODO this should return a monad instance
 export type ApiFn<R, A extends any[] = []> = (...args: A) => Promise<R>;
 
 /**

@@ -1,5 +1,5 @@
-import { ApiFn, DataOrModifiedFn, ModifierFn } from './types';
-import { resourceCache } from './cache';
+import { ApiFn, DataOrModifiedFn, ModifierFn } from "./types";
+import { resourceCache } from "./cache";
 
 /**
  * Wrapper for an apiFunction without params.
@@ -9,7 +9,7 @@ import { resourceCache } from './cache';
  * @param apiFn A typical api function that doesn't take any parameters.
  */
 export function initializeDataReader<ResponseType>(
-  apiFn: ApiFn<ResponseType>,
+  apiFn: ApiFn<ResponseType>
 ): DataOrModifiedFn<ResponseType>;
 
 /**
@@ -30,7 +30,7 @@ export function initializeDataReader<ResponseType, ArgTypes extends any[] = []>(
   apiFn: ApiFn<ResponseType, ArgTypes>,
   ...parameters: ArgTypes
 ) {
-  type AsyncStatus = 'init' | 'done' | 'error';
+  type AsyncStatus = "init" | "done" | "error";
 
   const apiFnCache = resourceCache(apiFn);
   const cachedResource = apiFnCache.get(...parameters);
@@ -40,30 +40,42 @@ export function initializeDataReader<ResponseType, ArgTypes extends any[] = []>(
   }
 
   let data: ResponseType;
-  let status: AsyncStatus = 'init';
+  let status: AsyncStatus = "init";
   let error: any;
 
+  // Todo make this use fp-ts to derive the chain function, etc
+  // E.g. pipe(_.chain(this), _.that(theOther))
+  // See fp-to-the-max II
+
+  // The component requires a capability typeclass
+  // Get user is a function that also requires this capability and returns a
+  // wrapped monad value
+  //
+  // `useAsyncResource` takes this monad value and derives chain to get the
+  // value out
+  // const [userReader, updateUserId] = useAsyncResource(props.getUser, 1);
+
   const fetchingPromise = apiFn(...parameters)
-    .then(result => {
+    .then((result) => {
       data = result;
-      status = 'done';
+      status = "done";
     })
-    .catch(err => {
+    .catch((err) => {
       error = err;
-      status = 'error';
+      status = "error";
     });
 
   // the return type successfully satisfies DataOrModifiedFn<ResponseType>
   function dataReaderFn(): ResponseType;
   function dataReaderFn<M>(modifier: ModifierFn<ResponseType, M>): M;
   function dataReaderFn<M>(modifier?: ModifierFn<ResponseType, M>) {
-    if (status === 'init') {
+    if (status === "init") {
       throw fetchingPromise;
-    } else if (status === 'error') {
+    } else if (status === "error") {
       throw error;
     }
 
-    return typeof modifier === 'function'
+    return typeof modifier === "function"
       ? (modifier(data) as M)
       : (data as ResponseType);
   }
